@@ -1,0 +1,3 @@
+setuptools>=49.2.1
+ConfigLoader @ git+https://github.com/NotToDisturb/ConfigLoader.git#egg=ConfigLoader
+VersionUtils @ git+https://github.com/NotToDisturb/VersionUtils.git#egg=VersionUtils

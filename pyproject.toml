@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "AudioExporter"
+version = "1.0.0"
+authors = [
+    { name="Disturbo", email="nottodisturb.disturbo@gmail.com" }
+]
+description = "Tool to export WAV audio files from VALORANT"
+readme = "README.md"
+license = {text = "MIT"}
+dependencies = [
+    "ConfigLoader @ git+https://github.com/NotToDisturb/ConfigLoader.git#egg=ConfigLoader",
+    "VersionUtils @ git+https://github.com/NotToDisturb/VersionUtils.git#egg=VersionUtils"
+]
+
+[project.urls]
+"GitHub" = "https://github.com/NotToDisturb/AudioExporter"
+
+[tool.setuptools]
+packages = ["locresexporter"]

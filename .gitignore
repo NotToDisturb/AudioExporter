@@ -1,0 +1,8 @@
+/.idea/
+/venv/
+/audioexporter/audio_config.json
+/AudioExporter.iml
+/AudioExporter.egg-info/
+/build/
+/standalone/build/
+/standalone/out/
