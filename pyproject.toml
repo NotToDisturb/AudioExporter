@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "AudioExporter"
-version = "1.0.0"
+version = "1.1.0"
 authors = [
     { name="Disturbo", email="nottodisturb.disturbo@gmail.com" }
 ]
@@ -20,4 +20,4 @@ dependencies = [
 "GitHub" = "https://github.com/NotToDisturb/AudioExporter"
 
 [tool.setuptools]
-packages = ["locresexporter"]
+packages = ["audioexporter"]

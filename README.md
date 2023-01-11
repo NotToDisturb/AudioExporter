@@ -1,9 +1,9 @@
 ## AudioExporter
 AudioExporter is a Python 3.8 script that extracts VALORANT's audio files into a playable WAV files. 
 There are three types of audio files supported by AudioExporter:
-1. `.ubulk` files containing WEM content
-1. `.uexp` files when a `.ubulk` is expected but doesn't exist
-1. `.uasset` files that contain references to audio files
+1. `.ubulk` files containing WEM content.
+1. `.uexp` files when a `.ubulk` is expected but doesn't exist.
+1. `.uasset` files that contain references to audio files.
 ## Package usage
 #### Installation
 
@@ -18,9 +18,10 @@ The following tools are also required:
 #### Documentation
 
 - [`AudioExporter`](#audioexporterpak_language-str-folder_language-str-game_path-str--none)
-- [`<AudioExporter instance>.export_files`]()
+- [`<AudioExporter instance>.export_audios`]()
 - [`<AudioExporter instance>.export_ubulk`]()
-- [`<AudioExporter instance>.export_uext`]()
+- [`<AudioExporter instance>.export_uexp`]()
+- [`<AudioExporter instance>.export_ip`]()
 - [`<AudioExporter instance>.export_uasset`]()
 
 <br>
@@ -35,25 +36,40 @@ The following tools are also required:
 
 <br>
 
-> ##### `<AudioExporter instance>.export_files`
+> ##### `<AudioExporter instance>.export_audios(`
+> &nbsp;&nbsp;&nbsp;&nbsp;`files: str, audio_types: str = ["localized"], audio_paks_path: str = None,`<br>
+> &nbsp;&nbsp;&nbsp;&nbsp;`output_path: str = None, archive=False`<br>
+> `)`
 > 
 > TODO
 
 <br>
 
-> ##### `<AudioExporter instance>.export_ubulk`
+> ##### `<AudioExporter instance>.export_ubulk(file: str, output_path: str, parent: str = None, archive: bool = False)`
 >
 > TODO
 
 <br>
 
-> ##### `<AudioExporter instance>.export_uexp`
+> ##### `<AudioExporter instance>.export_uexp(file: str, output_path: str, parent: str = None, archive: bool = False)`
 >
 > TODO 
 
 <br>
 
-> ##### `<AudioExporter instance>.export_uasset`
+> ##### `<AudioExporter instance>.export_id(`
+> &nbsp;&nbsp;&nbsp;&nbsp;`umodel_path: str, audio_id: str, audio_type: str, audio_paks_path: str, output_path: str,`<br>
+> &nbsp;&nbsp;&nbsp;&nbsp;`parent: str = None, archive: bool = False`<br>
+> `)`
+> 
+> TODO
+
+<br>
+
+> ##### `<AudioExporter instance>.export_uasset(`
+> &nbsp;&nbsp;&nbsp;&nbsp;`umodel_path: str, file: str, audio_type: str, audio_paks_path: str, output_path: str,`<br>
+> &nbsp;&nbsp;&nbsp;&nbsp;`parent: str = None, archive: bool = False`<br>
+> `)`
 >
 > TODO
 
@@ -85,18 +101,18 @@ AudioExporter uses a configuration file to know where the needed tools and other
 
 |Keyword            |Description|
 |-------------------|-----------|
-|`{pak_language}`   |Replaced by the language of the audio file in `xx_YY` format|
-|`{folder_language}`|Replaced by the language of the audio file in `xx-YY` format|
-|`{game_version}`   |Replaced by the game version on the provided executable|
-|`{audio_id}`       |Replaced by the string of numbers identifying the audio in the game files
-|`{parent}`         |Replaced by one of three: <ul><li>`ubulk` for `.ubulk` exports</li><li>`uexp` for `.uexp` exports<li>The name of the file that refers to the audio for `.uasset` exports</li>|
+|`{pak_language}`   |Replaced by the language of the audio file in `xx_YY` format.|
+|`{folder_language}`|Replaced by the language of the audio file in `xx-YY` format.|
+|`{game_version}`   |Replaced by the game version on the provided executable.|
+|`{audio_id}`       |Replaced by the string of numbers identifying the audio in the game files.|
+|`{parent}`         |Replaced by one of four when a `parent` argument is not provided: <ol><li>`ubulk` for `.ubulk` exports.</li><li>`uexp` for `.uexp` exports.</li><li>`audioID` for exports using the audio id.</li><li>The name of the file that refers to the audio for `.uasset` exports.</li></ol>|
 
 <br>
 
 #### Example usage
 Here is an example of how to use AudioExporter:
 ```
-from locresexporter import LocresExporter
+from audioexporter import AudioExporter
 
 NATURES_WRATH = "C:\\ProgramFiles\\UModel\\Saves\\Game\\WwiseAudio\\Localized\\en-US\\Media\\324031775.ubulk"
 
