@@ -18,11 +18,12 @@ The following tools are also required:
 #### Documentation
 
 - [`AudioExporter`](#audioexporterpak_language-str-folder_language-str-game_path-str--none)
-- [`<AudioExporter instance>.export_audios`]()
-- [`<AudioExporter instance>.export_ubulk`]()
-- [`<AudioExporter instance>.export_uexp`]()
-- [`<AudioExporter instance>.export_ip`]()
-- [`<AudioExporter instance>.export_uasset`]()
+- [`<AudioExporter instance>.export_audios`](#audioexporter-instanceexport_audios)
+- [`<AudioExporter instance>.export_ubulk`](#audioexporter-instanceexport_ubulk)
+- [`<AudioExporter instance>.export_uexp`](#audioexporter-instanceexport_uexp)
+- [`<AudioExporter instance>.export_ip`](#audioexporter-instanceexport_id)
+- [`<AudioExporter instance>.export_uasset`](#audioexporter-instanceexport_uasset)
+- [`<AudioExporter instance>.find_ids`](#audioexporter-instancefind_idsself-file-str-path_hex-str---list)
 
 <br>
 
@@ -37,7 +38,7 @@ The following tools are also required:
 <br>
 
 > ##### `<AudioExporter instance>.export_audios(`
-> &nbsp;&nbsp;&nbsp;&nbsp;`files: str, audio_types: str = ["localized"], audio_paks_path: str = None,`<br>
+> &nbsp;&nbsp;&nbsp;&nbsp;`files: list, audio_types: list = ["localized"], audio_paks_path: str = None,`<br>
 > &nbsp;&nbsp;&nbsp;&nbsp;`output_path: str = None, archive=False`<br>
 > `)`
 > 
@@ -45,21 +46,25 @@ The following tools are also required:
 
 <br>
 
-> ##### `<AudioExporter instance>.export_ubulk(file: str, output_path: str, parent: str = None, archive: bool = False)`
+> ##### `<AudioExporter instance>.export_ubulk(`
+> &nbsp;&nbsp;&nbsp;&nbsp;`file: str, output_path: str, parent: str = None, archive: bool = False`
+> `)`
 >
 > TODO
 
 <br>
 
-> ##### `<AudioExporter instance>.export_uexp(file: str, output_path: str, parent: str = None, archive: bool = False)`
+> ##### `<AudioExporter instance>.export_uexp(`
+> &nbsp;&nbsp;&nbsp;&nbsp;`file: str, output_path: str, parent: str = None, archive: bool = False`
+> `)`
 >
 > TODO 
 
 <br>
 
 > ##### `<AudioExporter instance>.export_id(`
-> &nbsp;&nbsp;&nbsp;&nbsp;`umodel_path: str, audio_id: str, audio_type: str, audio_paks_path: str, output_path: str,`<br>
-> &nbsp;&nbsp;&nbsp;&nbsp;`parent: str = None, archive: bool = False`<br>
+> &nbsp;&nbsp;&nbsp;&nbsp;`umodel_path: str, audio_id: str, audio_type: str, audio_paks_path: str,`<br>
+> &nbsp;&nbsp;&nbsp;&nbsp;`output_path: str, parent: str = None, archive: bool = False`<br>
 > `)`
 > 
 > TODO
@@ -67,10 +72,16 @@ The following tools are also required:
 <br>
 
 > ##### `<AudioExporter instance>.export_uasset(`
-> &nbsp;&nbsp;&nbsp;&nbsp;`umodel_path: str, file: str, audio_type: str, audio_paks_path: str, output_path: str,`<br>
-> &nbsp;&nbsp;&nbsp;&nbsp;`parent: str = None, archive: bool = False`<br>
+> &nbsp;&nbsp;&nbsp;&nbsp;`umodel_path: str, file: str, audio_type: str, audio_paks_path: str,`<br>
+> &nbsp;&nbsp;&nbsp;&nbsp;`output_path: str, parent: str = None, archive: bool = False`<br>
 > `)`
 >
+> TODO
+
+<br>
+
+> ##### `<AudioExporter instance>.find_ids(self, file: str, path_hex: str) -> list`
+> 
 > TODO
 
 <br><br>
@@ -88,12 +99,19 @@ AudioExporter uses a configuration file to know where the needed tools and other
 
 <br>
 
+#### Audio types
+|Type       |Description|
+|-----------|-----------|
+|`localized`|Audios that are present in `/Game/WwsiseAudio/Localized/{folder_language}/Media/`|
+|`general`  |Audios that are present in `/Game/WwsiseAudio/Localized/Media/`
+
 #### Example paths
 
 |Found in|Path               |Example|
 |--------|-------------------|-------|
 |Code    |`game_path`        |`C:\Riot Games\VALORANT\live\ShooterGame\Binaries\Win64\VALORANT-Win64-Shipping.exe`
-|Config  |`valorant_path`    |`C:\Riot Games\VALORANT\live\ `
+|Code    |`audio_paks_path`  |`C:\Riot Games\VALORANT\live\ShooterGame\Content\Paks\`
+|Config  |`valorant_path`    |`C:\Riot Games\VALORANT\live\`
 
 <br>
 
