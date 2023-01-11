@@ -23,7 +23,7 @@ The following tools are also required:
 - [`<AudioExporter instance>.export_uexp`](#audioexporter-instanceexport_uexp)
 - [`<AudioExporter instance>.export_ip`](#audioexporter-instanceexport_id)
 - [`<AudioExporter instance>.export_uasset`](#audioexporter-instanceexport_uasset)
-- [`<AudioExporter instance>.find_ids`](#audioexporter-instancefind_idsself-file-str-path_hex-str---list)
+- [`<AudioExporter instance>.find_ids`](#audioexporter-instancefind_idsfile-str-audio_type-str---list)
 
 <br>
 
@@ -42,47 +42,83 @@ The following tools are also required:
 > &nbsp;&nbsp;&nbsp;&nbsp;`output_path: str = None, archive=False`<br>
 > `)`
 > 
-> TODO
+> Exports and parses `files` by searching in each provided `audio_types` directory. It directs each file to its appropriate exporter
+> based on the file extension.
+> 
+> - If provided, `audio_paks_path` will override the VALORANT path (`valorant_path` in the config)
+> - If provided, `output_path` it will override the output path (`output_path` in the config)
+> - If true, `archive` also copies the resulting WAV file to an archival path.
+>   See more in the [Archiving](#Archiving) section.
+> 
+> Read more about [`audio_types`](#audio-types).
 
 <br>
 
 > ##### `<AudioExporter instance>.export_ubulk(`
-> &nbsp;&nbsp;&nbsp;&nbsp;`file: str, output_path: str, parent: str = None, archive: bool = False`
+> &nbsp;&nbsp;&nbsp;&nbsp;`file: str, output_path: str = None, parent: str = None, archive: bool = False`
 > `)`
->
-> TODO
+> 
+> Parses a ubulk `file` by running it through vgmstream (`vgmstream_path` in the config).
+> 
+> - If provided, `output_path` it will override the output path (`output_path` in the config)
+> - If provided, `parent` overrides the default `ubulk` parent.
+> - If true, `archive` also copies the resulting WAV file to an archival path.
+>   See more in the [Archiving](#Archiving) section.
 
 <br>
 
 > ##### `<AudioExporter instance>.export_uexp(`
-> &nbsp;&nbsp;&nbsp;&nbsp;`file: str, output_path: str, parent: str = None, archive: bool = False`
+> &nbsp;&nbsp;&nbsp;&nbsp;`file: str, output_path: str = None, parent: str = None, archive: bool = False`
 > `)`
 >
-> TODO 
+> Parses a uexp `file` by converting it to ubulk and running it through vgmstream (`vgmstream_path` in the config).
+>
+> - If provided, `output_path` it will override the output path (`output_path` in the config)
+> - If provided, `parent` overrides the default `uexp` parent.
+> - If true, `archive` also copies the resulting WAV file to an archival path.
+>   See more in the [Archiving](#Archiving) section.
 
 <br>
 
 > ##### `<AudioExporter instance>.export_id(`
-> &nbsp;&nbsp;&nbsp;&nbsp;`umodel_path: str, audio_id: str, audio_type: str, audio_paks_path: str,`<br>
-> &nbsp;&nbsp;&nbsp;&nbsp;`output_path: str, parent: str = None, archive: bool = False`<br>
+> &nbsp;&nbsp;&nbsp;&nbsp;`audio_id: str, audio_type: str, audio_paks_path: str = None,`<br>
+> &nbsp;&nbsp;&nbsp;&nbsp;`output_path: str = None, parent: str = None, archive: bool = False`<br>
 > `)`
 > 
-> TODO
+> Finds and exports `audio_id` from the given `audio_type` folder and parses by ensuring it is 
+> ubulk and running it through vgmstream (`vgmstream_path` in the config).
+>
+> - If provided, `audio_paks_path` will override the VALORANT path (`valorant_path` in the config)
+> - If provided, `output_path` it will override the output path (`output_path` in the config)
+> - If provided, `parent` overrides the default `audioID` parent.
+> - If true, `archive` also copies the resulting WAV file to an archival path.
+>   See more in the [Archiving](#Archiving) section.
+>
+> Read more about [`audio_types`](#audio-types).
 
 <br>
 
 > ##### `<AudioExporter instance>.export_uasset(`
-> &nbsp;&nbsp;&nbsp;&nbsp;`umodel_path: str, file: str, audio_type: str, audio_paks_path: str,`<br>
-> &nbsp;&nbsp;&nbsp;&nbsp;`output_path: str, parent: str = None, archive: bool = False`<br>
+> &nbsp;&nbsp;&nbsp;&nbsp;`file: str, audio_type: str, audio_paks_path: str = None,`<br>
+> &nbsp;&nbsp;&nbsp;&nbsp;`output_path: str = None, parent: str = None, archive: bool = False`<br>
 > `)`
 >
-> TODO
+> Finds and exports all audio ids present in `file` from the given `audio_type` folder and 
+> parses by ensuring it is ubulk and running it through vgmstream (`vgmstream_path` in the config).
+>
+> - If provided, `audio_paks_path` will override the VALORANT path (`valorant_path` in the config)
+> - If provided, `output_path` it will override the output path (`output_path` in the config)
+> - If provided, `parent` overrides the use of `file`'s filename as parent.
+> - If true, `archive` also copies the resulting WAV file to an archival path.
+>   See more in the [Archiving](#Archiving) section.
+>
+> Read more about [`audio_types`](#audio-types).
 
 <br>
 
-> ##### `<AudioExporter instance>.find_ids(self, file: str, path_hex: str) -> list`
+> ##### `<AudioExporter instance>.find_ids(file: str, audio_type: str) -> list`
 > 
-> TODO
+> Returns a list with all the audio ids of `audio_type` in `file`. Read more about [`audio_types`](#audio-types).
 
 <br><br>
 #### Config file

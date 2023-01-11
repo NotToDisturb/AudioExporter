@@ -76,49 +76,51 @@ class AudioExporter:
         output_path = output_path if output_path else self.config["output_path"]
         for file in files:
             if file.endswith(".ubulk"):
-                file = file.replace(".ubulk", "")
-                self.export_ubulk(file, output_path, archive=archive)
+                self.export_ubulk(file, output_path=output_path, archive=archive)
 
             elif file.endswith(".uexp"):
-                file = file.replace(".uexp", "")
-                self.export_uexp(file, output_path, archive=archive)
+                self.export_uexp(file, output_path=output_path, archive=archive)
 
             elif file.endswith(".uasset"):
-                file = file.replace(".uasset", "")
                 for audio_type in audio_types:
-                    self.export_uasset(self.config["umodel_path"], file, audio_type, audio_paks_path,
-                                       output_path, archive)
+                    self.export_uasset(file, audio_type, audio_paks_path=audio_paks_path,
+                                       output_path=output_path, archive=archive)
 
             else:
                 for audio_type in audio_types:
-                    self.export_id(self.config["umodel_path"], file, audio_type, audio_paks_path, output_path)
+                    self.export_id(file, audio_type, audio_paks_path=audio_paks_path, output_path=output_path)
 
-    def export_ubulk(self, file: str, output_path: str, parent: str = None, archive: bool = False):
-        if not parent:
-            parent = "uexp"
+    def export_ubulk(self, file: str, output_path: str = None, parent: str = None, archive: bool = False):
+        parent = parent if parent else "ubulk"
+        output_path = output_path if output_path else self.config["output_path"]
+        file = file.replace(".ubulk", "")
         output_path = self.__apply_output_path(output_path, parent, os.path.basename(file))
         archive_path = self.__get_archive_path(archive, parent, os.path.basename(file))
         self.__parse_ubulk(file, output_path, archive_path)
 
-    def export_uexp(self, file: str, output_path: str, parent: str = None, archive: bool = False):
+    def export_uexp(self, file: str, output_path: str = None, parent: str = None, archive: bool = False):
+        parent = parent if parent else "uexp"
+        output_path = output_path if output_path else self.config["output_path"]
+        file = file.replace(".uexp", "")
         self.__cleanup_uexp(file)
-        if not parent:
-            parent = "uexp"
         output_path = self.__apply_output_path(output_path, parent, os.path.basename(file))
         archive_path = self.__get_archive_path(archive, parent, os.path.basename(file))
         self.__parse_ubulk(file, output_path, archive_path)
 
-    def export_uasset(self, umodel_path: str, file: str, audio_type: str, audio_paks_path: str,
-                      output_path: str, archive: bool = False):
-        audio_folder = os.path.dirname(umodel_path) + "\\" + \
+    def export_uasset(self, file: str, audio_type: str, audio_paks_path: str = None, output_path: str = None,
+                      parent: str = None, archive: bool = False):
+        file = file.replace(".uasset", "")
+        parent = parent if parent else os.path.basename(file)
+        output_path = output_path if output_path else self.config["output_path"]
+        file = file.replace(".uasset", "")
+        audio_folder = os.path.dirname(self.config["umodel_path"]) + "\\" + \
                        self.__apply_language_to_path(AUDIO_TYPES[audio_type]["audio_folder"])
-        path_hex = self.__apply_language_to_path(AUDIO_TYPES[audio_type]["path_hex"]).encode("utf-8").hex()
 
-        audio_ids = self.find_ids(file, path_hex)
+        audio_ids = self.find_ids(file, audio_type)
         for audio_id in audio_ids:
-            audio_output_path = self.__apply_output_path(output_path, os.path.basename(file), audio_id)
-            archive_path = self.__get_archive_path(archive, os.path.basename(file), audio_id)
-            self.__export_id(umodel_path, audio_id, audio_folder, audio_paks_path, audio_output_path, archive_path)
+            audio_output_path = self.__apply_output_path(output_path, parent, audio_id)
+            archive_path = self.__get_archive_path(archive, parent, audio_id)
+            self.__export_id(audio_id, audio_folder, audio_paks_path, audio_output_path, archive_path)
 
     def __parse_ubulk(self, file: str, output_path: str, archive_path: str):
         if not os.path.isfile(file + ".ubulk"):
@@ -142,35 +144,36 @@ class AudioExporter:
             with open(file + ".ubulk", 'wb') as ubulk_file:
                 ubulk_file.write(wem_bytes)
 
-    def find_ids(self, file: str, path_hex: str) -> list:
+    def find_ids(self, file: str, audio_type: str) -> list:
+        path_hex = self.__apply_language_to_path(AUDIO_TYPES[audio_type]["path_hex"]).encode("utf-8").hex()
         with open(file + ".uasset", 'rb') as hub_file:
             audio_ids = hub_file.read().hex().split(path_hex)
             del audio_ids[::2]
             return [bytes.fromhex(audio_id[:-18]).decode('ascii') for audio_id in audio_ids]
 
-    def export_id(self, umodel_path: str, audio_id: str, audio_type: str, audio_paks_path: str, output_path: str,
+    def export_id(self, audio_id: str, audio_type: str, audio_paks_path: str = None, output_path: str = None,
                   parent: str = None, archive: bool = False):
-        if not parent:
-            parent = "audioID"
-        audio_folder = os.path.dirname(umodel_path) + "\\" + \
+        parent = parent if parent else "audioID"
+        output_path = output_path if output_path else self.config["output_path"]
+        audio_folder = os.path.dirname(self.config["umodel_path"]) + "\\" + \
                        self.__apply_language_to_path(AUDIO_TYPES[audio_type]["audio_folder"])
         output_path = self.__apply_output_path(output_path, parent, audio_id)
         archive_path = self.__get_archive_path(archive, parent, audio_id)
-        self.__export_id(umodel_path, audio_id, audio_folder, audio_paks_path, output_path, archive_path)
+        self.__export_id(audio_id, audio_folder, audio_paks_path, output_path, archive_path)
 
-    def __export_id(self, umodel_path: str, audio_id: str, audio_folder: str, audio_paks_path: str,
+    def __export_id(self, audio_id: str, audio_folder: str, audio_paks_path: str,
                     output_path: str, archive_path: str):
-        self.__extract_id(umodel_path, audio_id, audio_paks_path)
+        self.__extract_id(audio_id, audio_paks_path)
         audio_file = audio_folder + "\\" + audio_id
         self.__cleanup_uexp(audio_file)
         self.__parse_ubulk(audio_file, output_path, archive_path)
 
-    def __extract_id(self, umodel_path: str, audio_id: str, audio_paks_path: str):
+    def __extract_id(self, audio_id: str, audio_paks_path: str):
         audio_paks_path = audio_paks_path if audio_paks_path else \
             self.config["valorant_path"] + RELATIVE_PAK_FOLDER
 
         cwd = os.getcwd()
-        umodel_file, umodel_dir = AudioExporter.__separate_path(umodel_path)
+        umodel_file, umodel_dir = AudioExporter.__separate_path(self.config["umodel_path"])
         os.chdir(umodel_dir)
         subprocess1 = subprocess.Popen(
             [umodel_file, "-path=\"" + audio_paks_path + "\"",
@@ -195,11 +198,26 @@ def __select_language():
 
 
 def __process_file_list(files_list):
-    return [file for file in files_list if file.endswith((".uasset", ".uexp", ".ubulk")) or file.isnumeric()]
+    files = []
+    for file in files_list:
+        if os.path.isfile(file) and file.endswith((".uasset", ".ubulk")):
+            files.append(file)
+        elif os.path.isdir(file):
+            sub_files = [file + "\\" + sub_file for sub_file in os.listdir(file)]
+            ubulk_files = [sub_file for sub_file in sub_files if sub_file.endswith(".ubulk")]
+            uasset_files = [
+                sub_file for sub_file in sub_files
+                if sub_file.endswith(".uasset") and sub_file.replace(".uasset", "") + ".ubulk" not in ubulk_files
+            ]
+            files.extend(ubulk_files)
+            files.extend(uasset_files)
+    return files
 
 
 def __select_files():
-    files_str = input(f"[INPUT] Select files to export audio from:\n        ")
+    files_str = input(
+        f"[INPUT] Select files to export audio from (audio ids, ubulk, uasset or folders):\n        "
+    )
     files_list = files_str.replace(" ", "").split(",")
     files = __process_file_list(files_list)
     while files_str == "" or len(files) == 0:
@@ -211,7 +229,8 @@ def __select_files():
 
 def __select_processes():
     process_order_str = input(
-        f"[INPUT] Select processes to run (defaults are '{', '.join(AUDIO_TYPE_PROCESS_ORDER)}'):\n        ")
+        f"[INPUT] Select processes to run (defaults are '{', '.join(AUDIO_TYPE_PROCESS_ORDER)}'):\n        "
+    )
     process_order_list = process_order_str.replace(" ", "").split(",")
     process_order = [process for process in process_order_list if process in AUDIO_TYPES.keys()]
     if process_order_str == "" or len(process_order) == 0:
