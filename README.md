@@ -1,9 +1,11 @@
 ## AudioExporter
 AudioExporter is a Python 3.8 script that extracts VALORANT's audio files into a playable WAV files. 
-There are three types of audio files supported by AudioExporter:
+There are four types of exports supported by AudioExporter:
 1. `.ubulk` files containing WEM content.
 1. `.uexp` files when a `.ubulk` is expected but doesn't exist.
 1. `.uasset` files that contain references to audio files.
+1. Exporting based on audio ID.
+
 ## Package usage
 #### Installation
 
