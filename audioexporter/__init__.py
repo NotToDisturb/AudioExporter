@@ -180,10 +180,8 @@ class AudioExporter:
             sections = bank_str[objects_start:objects_start + hierarchy_size]
             working_index = 0
             audio_ids = []
-            while True:
+            while working_index < len(sections):
                 section_type = sections[working_index]
-                if section_type > 2:
-                    break
                 section_size = int.from_bytes(sections[working_index + 1: working_index + 5], byteorder="little")
                 working_index += 5      # Already read 1 byte of type, 4 bytes of size
                 if section_type == 2:
