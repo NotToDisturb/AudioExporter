@@ -9,14 +9,13 @@ HEX_HEADER = "52494646"
 AUDIO_TYPES = {
     "localized": {
         "audio_folder": "\\Saves\\Game\\WwiseAudio\\Localized\\{folder_language}\\Media\\",
+        "bank_folder": "\\Working\\AudioExport\\WwiseAudio\\Media\\{folder_language}\\",
         "path_hex": "/Game/WwiseAudio/Localized/{folder_language}/Media/"
     },
     "general": {
         "audio_folder": "\\Saves\\Game\\WwiseAudio\\Media\\",
+        "bank_folder": "\\Working\\AudioExport\\WwiseAudio\\Media\\",
         "path_hex": "/Game/WwiseAudio/Media/"
-    },
-    "banks": {
-        "audio_folder": "\\Saves\\Game\\WwiseAudio\\Media\\{folder_language}\\"
     }
 }
 AUDIO_TYPE_PROCESS_ORDER = ["localized", "general"]
@@ -25,6 +24,7 @@ PACKAGE_ROOT = os.path.join(__file__, "..")
 AUDIO_CONFIG = "audio_config.json"
 validators = {
     "umodel_path": ConfigLoader.validate_file,
+    "bnk_path": ConfigLoader.validate_file,
     "vgmstream_path": ConfigLoader.validate_file,
     "aes_path": ConfigLoader.validate_file,
     "valorant_path": ConfigLoader.validate_folder,
@@ -59,6 +59,11 @@ class AudioExporter:
     def __apply_audio_id_to_path(self, path: str, audio_id: str) -> str:
         return path.replace("{audio_id}", audio_id)
 
+    def __get_aes_key(self) -> bytes:
+        # Read the AES key from the provided raw text file
+        with open(self.config["aes_path"], "rt") as aes_file:
+            return aes_file.read()
+
     def __apply_output_path(self, path: str, parent: str, audio_id: str) -> str:
         output_path = self.__apply_language_to_path(path)
         output_path = self.__apply_game_version_to_path(output_path)
@@ -89,7 +94,9 @@ class AudioExporter:
                     self.export_uasset(file, audio_type, audio_paks_path=audio_paks_path,
                                        output_path=output_path, archive=archive)
             elif file.endswith(".bnk"):
-                self.export_bank(file, audio_paks_path=audio_paks_path, output_path=output_path, archive=archive)
+                for audio_type in audio_types:
+                    self.export_bank(file, audio_type, audio_paks_path=audio_paks_path,
+                                     output_path=output_path, archive=archive)
             else:
                 for audio_type in audio_types:
                     self.export_id(file, audio_type, audio_paks_path=audio_paks_path, output_path=output_path)
@@ -100,7 +107,7 @@ class AudioExporter:
         file = file.replace(".ubulk", "")
         output_path = self.__apply_output_path(output_path, parent, os.path.basename(file))
         archive_path = self.__get_archive_path(archive, parent, os.path.basename(file))
-        self.__parse_ubulk(file, output_path, archive_path)
+        self.__parse_wem(file, output_path, archive_path)
 
     def export_uexp(self, file: str, output_path: str = None, parent: str = None, archive: bool = False):
         parent = parent if parent else "uexp"
@@ -109,7 +116,7 @@ class AudioExporter:
         self.__cleanup_uexp(file)
         output_path = self.__apply_output_path(output_path, parent, os.path.basename(file))
         archive_path = self.__get_archive_path(archive, parent, os.path.basename(file))
-        self.__parse_ubulk(file, output_path, archive_path)
+        self.__parse_wem(file, output_path, archive_path)
 
     def export_uasset(self, file: str, audio_type: str, audio_paks_path: str = None, output_path: str = None,
                       parent: str = None, archive: bool = False):
@@ -123,26 +130,27 @@ class AudioExporter:
         for audio_id in audio_ids:
             audio_output_path = self.__apply_output_path(output_path, parent, audio_id)
             archive_path = self.__get_archive_path(archive, parent, audio_id)
-            self.__export_id(audio_id, audio_folder, audio_paks_path, audio_output_path, archive_path)
+            self.__export_uasset_id(audio_id, audio_folder, audio_paks_path, audio_output_path, archive_path)
 
-    def export_bank(self, file: str, audio_paks_path: str = None, output_path: str = None,
+    def export_bank(self, file: str, audio_type: str, audio_paks_path: str = None, output_path: str = None,
                     parent: str = None, archive: bool = False):
         file = file.replace(".bnk", "")
         parent = parent if parent else os.path.basename(file)
         output_path = output_path if output_path else self.config["output_path"]
         audio_folder = os.path.dirname(self.config["umodel_path"]) + "\\" + \
-                       self.__apply_language_to_path(AUDIO_TYPES["banks"]["audio_folder"])
+                       self.__apply_language_to_path(AUDIO_TYPES[audio_type]["bank_folder"])
 
-        audio_ids = AudioExporter.find_bank_ids(file)
+        audio_ids = AudioExporter.find_bank_ids(file, audio_type)
         for audio_id in audio_ids:
             audio_output_path = self.__apply_output_path(output_path, parent, audio_id)
             archive_path = self.__get_archive_path(archive, parent, audio_id)
-            self.__export_id(audio_id, audio_folder, audio_paks_path, audio_output_path, archive_path)
+            self.__export_wem_id(audio_id, audio_folder, audio_paks_path, audio_output_path, archive_path)
 
-    def __parse_ubulk(self, file: str, output_path: str, archive_path: str):
-        if not os.path.isfile(file + ".ubulk"):
+    def __parse_wem(self, file: str, output_path: str, archive_path: str):
+        if os.path.isfile(file + ".ubulk"):
+            shutil.copy(file + ".ubulk", file + ".wem")
+        elif not os.path.isfile(file + ".wem"):
             return
-        shutil.copy(file + ".ubulk", file + ".wem")
         subprocess1 = subprocess.Popen(
             [self.config["vgmstream_path"], "-o", output_path, file + ".wem"],
             stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
@@ -170,7 +178,7 @@ class AudioExporter:
 
     # https://wiki.xentax.com/index.php/Wwise_SoundBank_(*.bnk)#type_.232:_Sound_SFX.2FSound_Voice
     @staticmethod
-    def find_bank_ids(file: str) -> list:
+    def find_bank_ids(file: str, audio_type: str) -> list:
         with open(file + ".bnk", 'rb') as hub_file:
             hub_file.seek(4, 1)  # 4 bytes BKHD
             bank_size = int.from_bytes(hub_file.read(4), byteorder="little")
@@ -182,10 +190,18 @@ class AudioExporter:
                 if section_type == b'\x02':
                     # Added bytes are: 4 for object ID, 4 unknown and 1 for soundbank/streamed
                     # Documentation says sounbank/streamed is 4 bytes but it's actually only 1
-                    hub_file.seek(9, 1)
-                    audio_id = int.from_bytes(hub_file.read(4), byteorder="little")
-                    audio_ids.append(str(audio_id))
-                    hub_file.seek(section_size - 13, 1)  # Already read 13 bytes
+                    hub_file.seek(8, 1)
+                    sound_source = hub_file.read(1)
+                    if sound_source == b'\x00':
+                        hub_file.seek(section_size - 9, 1)  # Already read 14 bytes
+                    else:
+                        audio_id = int.from_bytes(hub_file.read(4), byteorder="little")
+                        hub_file.seek(4, 1)  # 4 bytes for source ID
+                        sound_type = hub_file.read(1)
+                        if (sound_type == b'\x00' and audio_type == "general") or \
+                                (sound_type == b'\x01' and audio_type == "localized"):
+                            audio_ids.append(str(audio_id))
+                        hub_file.seek(section_size - 18, 1)  # Already read 13 bytes
                 else:
                     hub_file.seek(section_size, 1)
             return audio_ids
@@ -198,16 +214,22 @@ class AudioExporter:
                        self.__apply_language_to_path(AUDIO_TYPES[audio_type]["audio_folder"])
         output_path = self.__apply_output_path(output_path, parent, audio_id)
         archive_path = self.__get_archive_path(archive, parent, audio_id)
-        self.__export_id(audio_id, audio_folder, audio_paks_path, output_path, archive_path)
+        self.__export_uasset_id(audio_id, audio_folder, audio_paks_path, output_path, archive_path)
 
-    def __export_id(self, audio_id: str, audio_folder: str, audio_paks_path: str,
-                    output_path: str, archive_path: str):
-        self.__extract_id(audio_id, audio_paks_path)
+    def __export_uasset_id(self, audio_id: str, audio_folder: str, audio_paks_path: str,
+                           output_path: str, archive_path: str):
+        self.__umodel_extract_id(audio_id, audio_paks_path)
         audio_file = audio_folder + "\\" + audio_id
         self.__cleanup_uexp(audio_file)
-        self.__parse_ubulk(audio_file, output_path, archive_path)
+        self.__parse_wem(audio_file, output_path, archive_path)
 
-    def __extract_id(self, audio_id: str, audio_paks_path: str):
+    def __export_wem_id(self, audio_id: str, audio_folder: str, audio_paks_path: str,
+                        output_path: str, archive_path: str):
+        self.__bnk_extract_id(audio_id, audio_paks_path)
+        audio_file = audio_folder + "\\" + audio_id
+        self.__parse_wem(audio_file, output_path, archive_path)
+
+    def __umodel_extract_id(self, audio_id: str, audio_paks_path: str):
         audio_paks_path = audio_paks_path if audio_paks_path else \
             self.config["valorant_path"] + RELATIVE_PAK_FOLDER
 
@@ -215,11 +237,20 @@ class AudioExporter:
         umodel_file, umodel_dir = AudioExporter.__separate_path(self.config["umodel_path"])
         os.chdir(umodel_dir)
         subprocess1 = subprocess.Popen(
-            [umodel_file, "-path=\"" + audio_paks_path + "\"",
-             "-game=valorant", "-aes=@" + self.config["aes_path"], "-save", audio_id],
-            stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            [umodel_file, "-path=\"" + audio_paks_path + "\"", "-game=valorant", "-aes=@" + self.config["aes_path"],
+             "-save", audio_id], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         subprocess1.wait()
         os.chdir(cwd)
+
+    def __bnk_extract_id(self, audio_id: str, audio_paks_path: str):
+        audio_paks_path = audio_paks_path if audio_paks_path else \
+            self.config["valorant_path"] + RELATIVE_PAK_FOLDER
+
+        subprocess1 = subprocess.Popen(
+            [self.config["bnk_path"], "-wem", "-search", audio_id, "-aes", self.__get_aes_key(),
+             "-gamedir", audio_paks_path, "-output", self.config["extract_path"]],
+            stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        subprocess1.wait()
 
     @staticmethod
     def __separate_path(path: str) -> tuple:
