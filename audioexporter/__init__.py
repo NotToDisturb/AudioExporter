@@ -172,24 +172,22 @@ class AudioExporter:
     @staticmethod
     def find_bank_ids(file: str) -> list:
         with open(file + ".bnk", 'rb') as hub_file:
-            bank_str = hub_file.read()
-            bank_size = int.from_bytes(bank_str[4:8], byteorder="little")
-            hierarchy_start = 8 + bank_size         # 4 bytes BKHD, 4 bytes for section size
-            hierarchy_size = int.from_bytes(bank_str[hierarchy_start + 4:hierarchy_start + 8], byteorder="little")
-            objects_start = 12 + hierarchy_start    # 4 bytes HIRC, 4 bytes for section size, 4 bytes for objects count
-            sections = bank_str[objects_start:objects_start + hierarchy_size]
-            working_index = 0
+            hub_file.seek(4, 1)  # 4 bytes BKHD
+            bank_size = int.from_bytes(hub_file.read(4), byteorder="little")
+            # Seek end of bank header, 4 bytes HIRC, 4 bytes section size, 4 bytes object count
+            hub_file.seek(bank_size + 12, 1)
             audio_ids = []
-            while working_index < len(sections):
-                section_type = sections[working_index]
-                section_size = int.from_bytes(sections[working_index + 1: working_index + 5], byteorder="little")
-                working_index += 5      # Already read 1 byte of type, 4 bytes of size
-                if section_type == 2:
+            while (section_type := hub_file.read(1)) != b'':
+                section_size = int.from_bytes(hub_file.read(4), byteorder="little")
+                if section_type == b'\x02':
                     # Added bytes are: 4 for object ID, 4 unknown and 1 for soundbank/streamed
                     # Documentation says sounbank/streamed is 4 bytes but it's actually only 1
-                    audio_id = int.from_bytes(sections[working_index + 9:working_index + 13], byteorder="little")
+                    hub_file.seek(9, 1)
+                    audio_id = int.from_bytes(hub_file.read(4), byteorder="little")
                     audio_ids.append(str(audio_id))
-                working_index += section_size
+                    hub_file.seek(section_size - 13, 1)  # Already read 13 bytes
+                else:
+                    hub_file.seek(section_size, 1)
             return audio_ids
 
     def export_id(self, audio_id: str, audio_type: str, audio_paks_path: str = None, output_path: str = None,
