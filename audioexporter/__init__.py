@@ -14,6 +14,9 @@ AUDIO_TYPES = {
     "general": {
         "audio_folder": "\\Saves\\Game\\WwiseAudio\\Media\\",
         "path_hex": "/Game/WwiseAudio/Media/"
+    },
+    "banks": {
+        "audio_folder": "\\Saves\\Game\\WwiseAudio\\Media\\{folder_language}\\"
     }
 }
 AUDIO_TYPE_PROCESS_ORDER = ["localized", "general"]
@@ -85,7 +88,8 @@ class AudioExporter:
                 for audio_type in audio_types:
                     self.export_uasset(file, audio_type, audio_paks_path=audio_paks_path,
                                        output_path=output_path, archive=archive)
-
+            elif file.endswith(".bnk"):
+                self.export_bank(file, audio_paks_path=audio_paks_path, output_path=output_path, archive=archive)
             else:
                 for audio_type in audio_types:
                     self.export_id(file, audio_type, audio_paks_path=audio_paks_path, output_path=output_path)
@@ -112,11 +116,24 @@ class AudioExporter:
         file = file.replace(".uasset", "")
         parent = parent if parent else os.path.basename(file)
         output_path = output_path if output_path else self.config["output_path"]
-        file = file.replace(".uasset", "")
         audio_folder = os.path.dirname(self.config["umodel_path"]) + "\\" + \
                        self.__apply_language_to_path(AUDIO_TYPES[audio_type]["audio_folder"])
 
-        audio_ids = self.find_ids(file, audio_type)
+        audio_ids = self.find_uasset_ids(file, audio_type)
+        for audio_id in audio_ids:
+            audio_output_path = self.__apply_output_path(output_path, parent, audio_id)
+            archive_path = self.__get_archive_path(archive, parent, audio_id)
+            self.__export_id(audio_id, audio_folder, audio_paks_path, audio_output_path, archive_path)
+
+    def export_bank(self, file: str, audio_paks_path: str = None, output_path: str = None,
+                    parent: str = None, archive: bool = False):
+        file = file.replace(".bnk", "")
+        parent = parent if parent else os.path.basename(file)
+        output_path = output_path if output_path else self.config["output_path"]
+        audio_folder = os.path.dirname(self.config["umodel_path"]) + "\\" + \
+                       self.__apply_language_to_path(AUDIO_TYPES["banks"]["audio_folder"])
+
+        audio_ids = AudioExporter.find_bank_ids(file)
         for audio_id in audio_ids:
             audio_output_path = self.__apply_output_path(output_path, parent, audio_id)
             archive_path = self.__get_archive_path(archive, parent, audio_id)
@@ -144,12 +161,38 @@ class AudioExporter:
             with open(file + ".ubulk", 'wb') as ubulk_file:
                 ubulk_file.write(wem_bytes)
 
-    def find_ids(self, file: str, audio_type: str) -> list:
+    def find_uasset_ids(self, file: str, audio_type: str) -> list:
         path_hex = self.__apply_language_to_path(AUDIO_TYPES[audio_type]["path_hex"]).encode("utf-8").hex()
         with open(file + ".uasset", 'rb') as hub_file:
             audio_ids = hub_file.read().hex().split(path_hex)
             del audio_ids[::2]
             return [bytes.fromhex(audio_id[:-18]).decode('ascii') for audio_id in audio_ids]
+
+    # https://wiki.xentax.com/index.php/Wwise_SoundBank_(*.bnk)#type_.232:_Sound_SFX.2FSound_Voice
+    @staticmethod
+    def find_bank_ids(file: str) -> list:
+        with open(file + ".bnk", 'rb') as hub_file:
+            bank_str = hub_file.read()
+            bank_size = int.from_bytes(bank_str[4:8], byteorder="little")
+            hierarchy_start = 8 + bank_size         # 4 bytes BKHD, 4 bytes for section size
+            hierarchy_size = int.from_bytes(bank_str[hierarchy_start + 4:hierarchy_start + 8], byteorder="little")
+            objects_start = 12 + hierarchy_start    # 4 bytes HIRC, 4 bytes for section size, 4 bytes for objects count
+            sections = bank_str[objects_start:objects_start + hierarchy_size]
+            working_index = 0
+            audio_ids = []
+            while True:
+                section_type = sections[working_index]
+                if section_type > 2:
+                    break
+                section_size = int.from_bytes(sections[working_index + 1: working_index + 5], byteorder="little")
+                working_index += 5      # Already read 1 byte of type, 4 bytes of size
+                if section_type == 2:
+                    # Added bytes are: 4 for object ID, 4 unknown and 1 for soundbank/streamed
+                    # Documentation says sounbank/streamed is 4 bytes but it's actually only 1
+                    audio_id = int.from_bytes(sections[working_index + 9:working_index + 13], byteorder="little")
+                    audio_ids.append(str(audio_id))
+                working_index += section_size
+            return audio_ids
 
     def export_id(self, audio_id: str, audio_type: str, audio_paks_path: str = None, output_path: str = None,
                   parent: str = None, archive: bool = False):
@@ -200,7 +243,7 @@ def __select_language():
 def __process_file_list(files_list):
     files = []
     for file in files_list:
-        if os.path.isfile(file) and file.endswith((".uasset", ".ubulk")):
+        if os.path.isfile(file) and file.endswith((".uasset", ".ubulk", ".bnk")):
             files.append(file)
         elif os.path.isdir(file):
             sub_files = [file + "\\" + sub_file for sub_file in os.listdir(file)]
@@ -209,14 +252,16 @@ def __process_file_list(files_list):
                 sub_file for sub_file in sub_files
                 if sub_file.endswith(".uasset") and sub_file.replace(".uasset", "") + ".ubulk" not in ubulk_files
             ]
+            bnk_files = [sub_file for sub_file in sub_files if sub_file.endswith(".bnk")]
             files.extend(ubulk_files)
             files.extend(uasset_files)
+            files.extend(bnk_files)
     return files
 
 
 def __select_files():
     files_str = input(
-        f"[INPUT] Select files to export audio from (audio ids, ubulk, uasset or folders):\n        "
+        f"[INPUT] Select files to export audio from (audio ids, ubulk, uasset, banks or folders):\n        "
     )
     files_list = files_str.replace(" ", "").split(",")
     files = __process_file_list(files_list)

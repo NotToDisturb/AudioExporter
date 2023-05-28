@@ -9,7 +9,7 @@ There are four types of exports supported by AudioExporter:
 ## Package usage
 #### Installation
 
-`pip install git+https://github.com/NotToDisturb/AudioExporter.git#egg=LocresExporter`
+`pip install git+https://github.com/NotToDisturb/AudioExporter.git#egg=AudioExporter`
 
 The following tools are also required:
 1. [UModel](https://www.gildor.org/en/projects/umodel)
