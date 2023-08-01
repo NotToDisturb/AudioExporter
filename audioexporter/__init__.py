@@ -192,16 +192,16 @@ class AudioExporter:
                     # Documentation says sounbank/streamed is 4 bytes but it's actually only 1
                     hub_file.seek(8, 1)
                     sound_source = hub_file.read(1)
+                    audio_id = int.from_bytes(hub_file.read(4), byteorder="little")
+                    hub_file.seek(4, 1)  # 4 bytes for source ID
                     if sound_source == b'\x00':
-                        hub_file.seek(section_size - 9, 1)  # Already read 14 bytes
-                    else:
-                        audio_id = int.from_bytes(hub_file.read(4), byteorder="little")
-                        hub_file.seek(4, 1)  # 4 bytes for source ID
-                        sound_type = hub_file.read(1)
-                        if (sound_type == b'\x00' and audio_type == "general") or \
-                                (sound_type == b'\x01' and audio_type == "localized"):
-                            audio_ids.append(str(audio_id))
-                        hub_file.seek(section_size - 18, 1)  # Already read 13 bytes
+                        hub_file.seek(8, 1) # 4 bytes for offset, 4 bytes for length
+                    sound_type = hub_file.read(1)
+                    if (sound_type == b'\x00' and sound_source == b'\x02' and audio_type == "general") or \
+                            (sound_type == b'\x00' and sound_source == b'\x00' and audio_type == "localized") or \
+                            (sound_type == b'\x01' and audio_type == "localized"):
+                        audio_ids.append(str(audio_id))
+                    hub_file.seek(section_size - 18 - (8 if sound_source == b'\x00' else 0), 1)  # Already read 13 bytes
                 else:
                     hub_file.seek(section_size, 1)
             return audio_ids
