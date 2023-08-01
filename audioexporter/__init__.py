@@ -9,12 +9,12 @@ HEX_HEADER = "52494646"
 AUDIO_TYPES = {
     "localized": {
         "audio_folder": "\\Saves\\Game\\WwiseAudio\\Localized\\{folder_language}\\Media\\",
-        "bank_folder": "\\Working\\AudioExport\\WwiseAudio\\Media\\{folder_language}\\",
+        "bank_folder": "\\WwiseAudio\\Media\\{folder_language}\\",
         "path_hex": "/Game/WwiseAudio/Localized/{folder_language}/Media/"
     },
     "general": {
         "audio_folder": "\\Saves\\Game\\WwiseAudio\\Media\\",
-        "bank_folder": "\\Working\\AudioExport\\WwiseAudio\\Media\\",
+        "bank_folder": "\\WwiseAudio\\Media\\",
         "path_hex": "/Game/WwiseAudio/Media/"
     }
 }
@@ -137,7 +137,7 @@ class AudioExporter:
         file = file.replace(".bnk", "")
         parent = parent if parent else os.path.basename(file)
         output_path = output_path if output_path else self.config["output_path"]
-        audio_folder = os.path.dirname(self.config["umodel_path"]) + "\\" + \
+        audio_folder = self.config["extract_path"] + "\\" + \
                        self.__apply_language_to_path(AUDIO_TYPES[audio_type]["bank_folder"])
 
         audio_ids = AudioExporter.find_bank_ids(file, audio_type)
@@ -195,7 +195,7 @@ class AudioExporter:
                     audio_id = int.from_bytes(hub_file.read(4), byteorder="little")
                     hub_file.seek(4, 1)  # 4 bytes for source ID
                     if sound_source == b'\x00':
-                        hub_file.seek(8, 1) # 4 bytes for offset, 4 bytes for length
+                        hub_file.seek(8, 1)  # 4 bytes for offset, 4 bytes for length
                     sound_type = hub_file.read(1)
                     if (sound_type == b'\x00' and sound_source == b'\x02' and audio_type == "general") or \
                             (sound_type == b'\x00' and sound_source == b'\x00' and audio_type == "localized") or \
